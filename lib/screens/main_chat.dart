@@ -50,13 +50,20 @@ class _MainchatState extends State<Mainchat> {
   // }
 
   final _socketClient = SocketClient.instance.socket!;
-  void disconnectSocket() {
-    _socketClient.disconnect();
+  void disconnectSocket(String user) {
+    _socketClient.emit("dconnect", {"user": user});
+    _socketClient.close();
+    if (_socketClient.connected) {
+      log('Socket is connected');
+    } else {
+      log('Socket is not connected');
+    }
   }
 
   //emitters
   void joinsocket(String user) {
     if (user.isNotEmpty) {
+      log("joining socket");
       _socketClient.emit("add", {"user": user});
     }
   }
@@ -95,10 +102,9 @@ class _MainchatState extends State<Mainchat> {
 
   @override
   void dispose() {
-    // TODO: implement dispose
-    super.dispose();
-    disconnectSocket();
+    // disconnectSocket(UserData.cache[1]);
     _streamManager.dispose();
+    super.dispose();
   }
 
   @override
@@ -154,217 +160,218 @@ class _MainchatState extends State<Mainchat> {
       body: Stack(
         children: [
           SingleChildScrollView(
-            child: Stack(
+            child: Column(
               children: [
-                Column(
-                  children: [
-                    SizedBox(
-                        height: screenHeight - 100,
-                        child: StreamBuilder(
-                          stream: _streamManager.controller.stream,
-                          builder: (BuildContext context,
-                              AsyncSnapshot<dynamic> snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                  child: CircularProgressIndicator());
-                            } else if (snapshot.hasError) {
-                              return Text('Error: ${snapshot.error}');
-                            }
+                SizedBox(
+                    height: screenHeight - 100,
+                    child: StreamBuilder(
+                      stream: _streamManager.controller.stream,
+                      builder: (BuildContext context,
+                          AsyncSnapshot<dynamic> snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        } else if (snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        }
 
-                            SchedulerBinding.instance
-                                .addPostFrameCallback((timeStamp) {
-                              messageController.jumpTo(
-                                  messageController.position.maxScrollExtent);
-                            });
-                            return ListView.builder(
-                                controller: messageController,
-                                itemCount: snapshot.data.length,
-                                itemBuilder: (context, index) {
-                                  return Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Column(
+                        SchedulerBinding.instance
+                            .addPostFrameCallback((timeStamp) {
+                          messageController.jumpTo(
+                              messageController.position.maxScrollExtent);
+                        });
+                        return ListView.builder(
+                            controller: messageController,
+                            itemCount: snapshot.data.length,
+                            itemBuilder: (context, index) {
+                              return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: snapshot.data[index]
+                                                  ["fromself"] ==
+                                              true
+                                          ? MainAxisAlignment.end
+                                          : MainAxisAlignment.start,
                                       children: [
-                                        Row(
-                                          mainAxisAlignment:
-                                              snapshot.data[index]
-                                                          ["fromself"] ==
-                                                      true
-                                                  ? MainAxisAlignment.end
-                                                  : MainAxisAlignment.start,
-                                          children: [
-                                            BubbleSpecialOne(
-                                              isSender: snapshot.data[index]
-                                                          ["fromself"] ==
-                                                      true
-                                                  ? true
-                                                  : false,
-                                              text: snapshot.data[index]
-                                                  ["message"],
-                                              tail: true,
-                                              color: snapshot.data[index]
-                                                          ["fromself"] ==
-                                                      true
-                                                  ? primary
-                                                  : Color(0xffefefef),
-                                              textStyle: TextStyle(
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.w300,
-                                                color: snapshot.data[index]
-                                                            ["fromself"] ==
-                                                        true
-                                                    ? Colors.white
-                                                    : Colors.black,
-                                              ),
-                                            ),
-                                          ],
+                                        BubbleSpecialOne(
+                                          isSender: snapshot.data[index]
+                                                      ["fromself"] ==
+                                                  true
+                                              ? true
+                                              : false,
+                                          text: snapshot.data[index]["message"],
+                                          tail: true,
+                                          color: snapshot.data[index]
+                                                      ["fromself"] ==
+                                                  true
+                                              ? primary
+                                              : Color(0xffefefef),
+                                          textStyle: TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w300,
+                                            color: snapshot.data[index]
+                                                        ["fromself"] ==
+                                                    true
+                                                ? Colors.white
+                                                : Colors.black,
+                                          ),
                                         ),
-                                        Row(
-                                          mainAxisAlignment:
-                                              snapshot.data[index]
-                                                          ["fromself"] ==
-                                                      true
-                                                  ? MainAxisAlignment.end
-                                                  : MainAxisAlignment.start,
-                                          children: [
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 15.0),
-                                              child: Text(
-                                                "2:30 pm",
-                                                style: TextStyle(
-                                                    fontWeight: FontWeight.w400,
-                                                    fontSize: 12),
-                                              ),
-                                            )
-                                          ],
-                                        )
                                       ],
                                     ),
-                                  );
-                                });
-                          },
-                        )),
-                    Container(
-                      height: 50,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          children: [
-                            InkWell(
-                              onTap: () {
-                                showModalBottomSheet(
-                                  useSafeArea: true,
-                                  backgroundColor: Color(0xfffafafa),
-                                  context: context,
-                                  constraints: BoxConstraints(
-                                      maxWidth: screenWidth, maxHeight: 120),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20)),
-                                  builder: (BuildContext context) {
-                                    return Container(
-                                      width: screenWidth / 2 + 10,
-                                      decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.all(
-                                              Radius.circular(100))),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.all(15.0),
-                                            child: Column(
-                                              children: [
-                                                CircleAvatar(
-                                                    backgroundColor:
-                                                        Color(0x965458ab),
-                                                    radius: 25,
-                                                    child: Icon(
-                                                      Icons.photo_sharp,
-                                                      color: Colors.white,
-                                                    )),
-                                                SizedBox(
-                                                  height: 5,
-                                                ),
-                                                Text("Gallery")
-                                              ],
-                                            ),
+                                    Row(
+                                      mainAxisAlignment: snapshot.data[index]
+                                                  ["fromself"] ==
+                                              true
+                                          ? MainAxisAlignment.end
+                                          : MainAxisAlignment.start,
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 15.0),
+                                          child: Text(
+                                            "${24 - snapshot.data[index]["hour"]}:${snapshot.data[index]["minutes"]}",
+                                            style: TextStyle(
+                                                fontWeight: FontWeight.w400,
+                                                fontSize: 12),
                                           ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(20.0),
-                                            child: Column(
-                                              children: [
-                                                CircleAvatar(
-                                                    backgroundColor:
-                                                        Color(0x965458ab),
-                                                    radius: 25,
-                                                    child: Icon(
-                                                      Icons.edit_document,
-                                                      color: Colors.white,
-                                                    )),
-                                                SizedBox(
-                                                  height: 5,
-                                                ),
-                                                Text("Document")
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                );
-                              },
-                              child: Transform.rotate(
-                                  angle: 90, child: Icon(Icons.attach_file)),
-                            ),
-                            SizedBox(
-                              width: 10,
-                            ),
-                            Container(
-                              width: screenWidth - 24 - 10 - 60 - 20,
-                              child: TextField(
-                                controller: _controller,
-                                decoration: InputDecoration(
-                                    hintText: 'Type message here',
-                                    hintStyle: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w300),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.all(
-                                          Radius.circular(20.0)),
-                                    )),
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () async {
-                                log(_controller.text);
-                                await sendmessage(UserData.cache[1],
-                                    widget.receiver, _controller.text);
-                                _streamManager.getallmessage(
-                                    UserData.cache[1], widget.receiver);
-                              },
-                              child: const CircleAvatar(
-                                backgroundColor:
-                                    Color.fromRGBO(51, 48, 212, 1.0),
-                                radius: 30,
-                                child: Icon(
-                                  Icons.send,
-                                  color: Colors.white,
-                                  size: 30,
+                                        )
+                                      ],
+                                    )
+                                  ],
                                 ),
+                              );
+                            });
+                      },
+                    )),
+              ],
+            ),
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: SizedBox(
+              height: 50,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        showModalBottomSheet(
+                          useSafeArea: true,
+                          backgroundColor: Color(0xfffafafa),
+                          context: context,
+                          constraints: BoxConstraints(
+                              maxWidth: screenWidth, maxHeight: 120),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20)),
+                          builder: (BuildContext context) {
+                            return Container(
+                              width: screenWidth / 2 + 10,
+                              decoration: BoxDecoration(
+                                  borderRadius:
+                                      BorderRadius.all(Radius.circular(100))),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(15.0),
+                                    child: Column(
+                                      children: [
+                                        CircleAvatar(
+                                            backgroundColor: Color(0x965458ab),
+                                            radius: 25,
+                                            child: Icon(
+                                              Icons.photo_sharp,
+                                              color: Colors.white,
+                                            )),
+                                        SizedBox(
+                                          height: 5,
+                                        ),
+                                        Text("Gallery")
+                                      ],
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(20.0),
+                                    child: Column(
+                                      children: [
+                                        CircleAvatar(
+                                            backgroundColor: Color(0x965458ab),
+                                            radius: 25,
+                                            child: Icon(
+                                              Icons.edit_document,
+                                              color: Colors.white,
+                                            )),
+                                        SizedBox(
+                                          height: 5,
+                                        ),
+                                        Text("Document")
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                            )
-                          ],
+                            );
+                          },
+                        );
+                      },
+                      child: Transform.rotate(
+                          angle: 90, child: Icon(Icons.attach_file)),
+                    ),
+                    SizedBox(
+                      width: 10,
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: SizedBox(
+                        width: screenWidth - 24 - 10 - 60 - 20,
+                        child: TextField(
+                          controller: _controller,
+                          // minLines: 1,
+                          // maxLines: 3,
+                          keyboardType: TextInputType.multiline,
+                          textAlignVertical: TextAlignVertical.center,
+                          scrollPhysics: const NeverScrollableScrollPhysics(),
+                          decoration: const InputDecoration(
+                            hintText: 'Type message here',
+                            hintStyle: TextStyle(
+                                fontSize: 10, fontWeight: FontWeight.w300),
+                            // border: OutlineInputBorder(
+                            //   borderRadius:
+                            //       BorderRadius.all(Radius.circular(20.0)),
+                            // )
+                          ),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () async {
+                        log(_controller.text);
+                        await sendmessage(UserData.cache[1], widget.receiver,
+                            _controller.text);
+                        _controller.clear();
+                        _streamManager.getallmessage(
+                            UserData.cache[1], widget.receiver);
+                      },
+                      child: const CircleAvatar(
+                        backgroundColor: Color.fromRGBO(51, 48, 212, 1.0),
+                        radius: 30,
+                        child: Icon(
+                          Icons.send,
+                          color: Colors.white,
+                          size: 30,
                         ),
                       ),
                     )
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
+          )
         ],
       ),
     );

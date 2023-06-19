@@ -164,6 +164,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                               await login(_name.text, _password.text);
                           if (response == "success") {
                             await UserData().getdata();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("successful login")));
                             Timer(Duration(seconds: 1), () {
                               Navigator.of(context).pushReplacement(
                                   MaterialPageRoute(

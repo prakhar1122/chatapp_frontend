@@ -5,8 +5,10 @@ import 'package:personal_chat_app/services/sharedpref.dart';
 import 'package:personal_chat_app/services/socket_methods.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../constants.dart';
+
 final dio = Dio();
-String base = "";
+// String base = "";
 PrefsService _prefsService = PrefsService();
 // final SocketMethods _socketMethods = SocketMethods();
 Future<String> register(String name, String email, String password) async {
@@ -17,8 +19,7 @@ Future<String> register(String name, String email, String password) async {
   };
 
   try {
-    final response =
-        await dio.post("http://192.168.1.39:4000/users/", data: requestBody);
+    final response = await dio.post("${base}/users/", data: requestBody);
     if (response.data["status"] == false) {
       log(response.data["error"]);
       return response.data["error"];
@@ -35,8 +36,9 @@ Future<String> login(String name, String pass) async {
 
   Map<String, dynamic> requestBody = {"name": name, "password": pass};
   try {
-    final response = await dio.post("http://192.168.1.39:4000/users/login",
-        data: requestBody);
+    var url = "${base}/users/login";
+    log("url is $url");
+    final response = await dio.post(url, data: requestBody);
     _prefsService.creatCache([
       response.data["user"]["_id"],
       response.data["user"]["name"],
@@ -53,7 +55,7 @@ Future<String> login(String name, String pass) async {
 //to get all the registered users
 Future getall() async {
   try {
-    final response = await dio.get("http://192.168.1.39:4000/users/all/:id");
+    final response = await dio.get("${base}/users/all/:id");
     log(response.data.toString());
     return response.data["users"];
   } catch (e) {
@@ -70,7 +72,7 @@ Future getall() async {
 //   // };
 //   try {
 //     // final response =
-//     //     await dio.post("http://192.168.1.39:4000/messages/addmessage", data: m);
+//     //     await dio.post("${base}/messages/addmessage", data: m);
 //     // _socketMethods.sendmessage(sender, receiver, messsage);
 //     log("success");
 //     // log(response.data.toString());
