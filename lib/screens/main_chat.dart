@@ -6,6 +6,7 @@ import 'package:chat_bubbles/bubbles/bubble_special_one.dart';
 // import 'package:chatproject/screens/api_services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:personal_chat_app/models/msgmodel.dart';
 import 'package:personal_chat_app/provider/userdata.dart';
 import 'package:personal_chat_app/services/api_services.dart';
 import 'package:personal_chat_app/services/socket_methods.dart';
@@ -35,11 +36,19 @@ class Mainchat extends StatefulWidget {
   State<Mainchat> createState() => _MainchatState();
 }
 
-class _MainchatState extends State<Mainchat> {
+class _MainchatState extends State<Mainchat> with WidgetsBindingObserver {
   late String userid;
-  TextEditingController _controller = TextEditingController();
+  final TextEditingController _controller = TextEditingController();
   ScrollController messageController = ScrollController();
   final StreamManager _streamManager = StreamManager();
+  List<MsgModel> messages = [];
+  int _currentIndex = 0;
+
+  void _onTabTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
   // PrefsService _prefsService = PrefsService();
   // final SocketMethods _socketMethods = SocketMethods();
   // late List<String> cache;
@@ -103,6 +112,7 @@ class _MainchatState extends State<Mainchat> {
   @override
   void dispose() {
     // disconnectSocket(UserData.cache[1]);
+    messageController.dispose();
     _streamManager.dispose();
     super.dispose();
   }
@@ -114,256 +124,169 @@ class _MainchatState extends State<Mainchat> {
     final screenHeight =
         MediaQuery.of(context).size.height - safeArea.top - safeArea.bottom;
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(50),
-        child: AppBar(
-          elevation: 1,
-          backgroundColor: Colors.white,
-          leading: IconButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            icon: Icon(
-              Icons.chevron_left_rounded,
-              color: Colors.black87,
-              size: 30,
+      resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        backgroundColor: primary2,
+        leadingWidth: 200,
+        leading: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 10,
             ),
-          ),
-          centerTitle: true,
-          title: Container(
-            width: 140,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                CircleAvatar(
-                  radius: 22,
-                  // minRadius: 10,
-                  backgroundImage: NetworkImage("https://picsum.photos/200"),
-                ),
-                SizedBox(
-                  width: 5,
-                ),
-                Container(
-                  width: 85,
-                  child: Text(
-                    overflow: TextOverflow.ellipsis,
-                    widget.receiver,
-                    style: TextStyle(
-                        color: Colors.black87, fontWeight: FontWeight.w400),
-                  ),
-                ),
-              ],
+            GestureDetector(
+              onTap: () {
+                Navigator.of(context).pop();
+              },
+              child: Icon(
+                Icons.arrow_back,
+                size: 30,
+                color: Colors.white,
+              ),
             ),
-          ),
+            SizedBox(
+              width: 10,
+            ),
+            Text(
+              widget.receiver,
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 20),
+            )
+          ],
         ),
       ),
       body: Stack(
         children: [
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                SizedBox(
-                    height: screenHeight - 100,
-                    child: StreamBuilder(
-                      stream: _streamManager.controller.stream,
-                      builder: (BuildContext context,
-                          AsyncSnapshot<dynamic> snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                              child: CircularProgressIndicator());
-                        } else if (snapshot.hasError) {
-                          return Text('Error: ${snapshot.error}');
-                        }
-
-                        SchedulerBinding.instance
-                            .addPostFrameCallback((timeStamp) {
-                          messageController.jumpTo(
-                              messageController.position.maxScrollExtent);
-                        });
-                        return ListView.builder(
-                            controller: messageController,
-                            itemCount: snapshot.data.length,
-                            itemBuilder: (context, index) {
-                              return Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Column(
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: snapshot.data[index]
-                                                  ["fromself"] ==
-                                              true
-                                          ? MainAxisAlignment.end
-                                          : MainAxisAlignment.start,
-                                      children: [
-                                        BubbleSpecialOne(
-                                          isSender: snapshot.data[index]
-                                                      ["fromself"] ==
-                                                  true
-                                              ? true
-                                              : false,
-                                          text: snapshot.data[index]["message"],
-                                          tail: true,
-                                          color: snapshot.data[index]
-                                                      ["fromself"] ==
-                                                  true
-                                              ? primary
-                                              : Color(0xffefefef),
-                                          textStyle: TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w300,
-                                            color: snapshot.data[index]
-                                                        ["fromself"] ==
-                                                    true
-                                                ? Colors.white
-                                                : Colors.black,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Row(
-                                      mainAxisAlignment: snapshot.data[index]
-                                                  ["fromself"] ==
-                                              true
-                                          ? MainAxisAlignment.end
-                                          : MainAxisAlignment.start,
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 15.0),
-                                          child: Text(
-                                            "${24 - snapshot.data[index]["hour"]}:${snapshot.data[index]["minutes"]}",
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.w400,
-                                                fontSize: 12),
-                                          ),
-                                        )
-                                      ],
-                                    )
-                                  ],
+          SizedBox(
+            height: MediaQuery.of(context).size.height - 100,
+            child: StreamBuilder(
+              stream: _streamManager.controller.stream,
+              builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                }
+                SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
+                  messageController
+                      .jumpTo(messageController.position.maxScrollExtent);
+                });
+                return ListView.builder(
+                    controller: messageController,
+                    itemCount: snapshot.data.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == snapshot.data.length) {
+                        return Container(
+                          height: 40,
+                        );
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment:
+                                  snapshot.data[index]["fromself"] == true
+                                      ? MainAxisAlignment.end
+                                      : MainAxisAlignment.start,
+                              children: [
+                                BubbleSpecialOne(
+                                  isSender:
+                                      snapshot.data[index]["fromself"] == true
+                                          ? true
+                                          : false,
+                                  text: snapshot.data[index]["message"],
+                                  tail: true,
+                                  color:
+                                      snapshot.data[index]["fromself"] == true
+                                          ? primary
+                                          : Color(0xffefefef),
+                                  textStyle: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w300,
+                                    color:
+                                        snapshot.data[index]["fromself"] == true
+                                            ? Colors.white
+                                            : Colors.black,
+                                  ),
                                 ),
-                              );
-                            });
-                      },
-                    )),
-              ],
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment:
+                                  snapshot.data[index]["fromself"] == true
+                                      ? MainAxisAlignment.end
+                                      : MainAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 15.0),
+                                  child: Text(
+                                    "${24 - snapshot.data[index]["hour"]}:${snapshot.data[index]["minutes"]}",
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w400,
+                                        fontSize: 12),
+                                  ),
+                                )
+                              ],
+                            )
+                          ],
+                        ),
+                      );
+                    });
+              },
             ),
           ),
           Align(
             alignment: Alignment.bottomCenter,
-            child: SizedBox(
-              height: 50,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
+            child: Container(
+              height: 60,
+              width: screenWidth,
+              color: Colors.white,
+              child: Card(
+                color: primary2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
                 child: Row(
                   children: [
-                    InkWell(
-                      onTap: () {
-                        showModalBottomSheet(
-                          useSafeArea: true,
-                          backgroundColor: Color(0xfffafafa),
-                          context: context,
-                          constraints: BoxConstraints(
-                              maxWidth: screenWidth, maxHeight: 120),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20)),
-                          builder: (BuildContext context) {
-                            return Container(
-                              width: screenWidth / 2 + 10,
-                              decoration: BoxDecoration(
-                                  borderRadius:
-                                      BorderRadius.all(Radius.circular(100))),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.all(15.0),
-                                    child: Column(
-                                      children: [
-                                        CircleAvatar(
-                                            backgroundColor: Color(0x965458ab),
-                                            radius: 25,
-                                            child: Icon(
-                                              Icons.photo_sharp,
-                                              color: Colors.white,
-                                            )),
-                                        SizedBox(
-                                          height: 5,
-                                        ),
-                                        Text("Gallery")
-                                      ],
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(20.0),
-                                    child: Column(
-                                      children: [
-                                        CircleAvatar(
-                                            backgroundColor: Color(0x965458ab),
-                                            radius: 25,
-                                            child: Icon(
-                                              Icons.edit_document,
-                                              color: Colors.white,
-                                            )),
-                                        SizedBox(
-                                          height: 5,
-                                        ),
-                                        Text("Document")
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      },
-                      child: Transform.rotate(
-                          angle: 90, child: Icon(Icons.attach_file)),
+                    SizedBox(
+                      width: 20,
                     ),
                     SizedBox(
-                      width: 10,
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: SizedBox(
-                        width: screenWidth - 24 - 10 - 60 - 20,
-                        child: TextField(
-                          controller: _controller,
-                          // minLines: 1,
-                          // maxLines: 3,
-                          keyboardType: TextInputType.multiline,
-                          textAlignVertical: TextAlignVertical.center,
-                          scrollPhysics: const NeverScrollableScrollPhysics(),
-                          decoration: const InputDecoration(
-                            hintText: 'Type message here',
-                            hintStyle: TextStyle(
-                                fontSize: 10, fontWeight: FontWeight.w300),
-                            // border: OutlineInputBorder(
-                            //   borderRadius:
-                            //       BorderRadius.all(Radius.circular(20.0)),
-                            // )
-                          ),
+                      width: screenWidth - 80,
+                      child: TextField(
+                        style: TextStyle(
+                          color: Colors
+                              .white, // Set the desired color for the input text
+                        ),
+                        controller: _controller,
+                        decoration: const InputDecoration(
+                          contentPadding: EdgeInsets.symmetric(vertical: 12.0),
+                          border: InputBorder.none,
+                          hintText: "tap to send message",
+                          hintStyle: TextStyle(color: Colors.white),
                         ),
                       ),
                     ),
                     GestureDetector(
-                      onTap: () async {
-                        log(_controller.text);
-                        await sendmessage(UserData.cache[1], widget.receiver,
-                            _controller.text);
-                        _controller.clear();
-                        _streamManager.getallmessage(
-                            UserData.cache[1], widget.receiver);
+                      onTap: () {
+                        if (_controller.text.isNotEmpty) {
+                          sendmessage(UserData.cache[1], widget.receiver,
+                              _controller.text);
+                          _streamManager.getallmessage(
+                              UserData.cache[1], widget.receiver);
+                          _controller.clear();
+                        }
                       },
-                      child: const CircleAvatar(
-                        backgroundColor: Color.fromRGBO(51, 48, 212, 1.0),
-                        radius: 30,
+                      child: CircleAvatar(
+                        radius: 25,
+                        backgroundColor: Color.fromRGBO(46, 43, 208, 1),
                         child: Icon(
                           Icons.send,
                           color: Colors.white,
-                          size: 30,
                         ),
                       ),
                     )

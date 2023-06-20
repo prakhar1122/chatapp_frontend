@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:personal_chat_app/colors.dart';
+import 'package:personal_chat_app/screens/splash.dart';
 import 'package:personal_chat_app/screens/welcone_screen.dart';
 
 void main() {
@@ -19,6 +20,6 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
           primarySwatch: primary,
         ),
-        home: WelcomeScreen());
+        home: const Splash());
   }
 }

@@ -4,10 +4,16 @@ import '../services/sharedpref.dart';
 
 class UserData {
   static List<String> cache = [];
-  PrefsService _prefsService = PrefsService();
+  final PrefsService _prefsService = PrefsService();
+
   Future getdata() async {
-    cache = await _prefsService.getCache();
+    var temp = await _prefsService.getCache();
+    if (temp != null) cache = temp;
     log(cache.toString());
     log(cache.length.toString());
+  }
+
+  cleardata() async {
+    _prefsService.deleteCache();
   }
 }

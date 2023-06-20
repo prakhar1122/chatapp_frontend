@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:personal_chat_app/screens/setavatar.dart';
 import 'package:personal_chat_app/screens/welcone_screen.dart';
 import 'package:personal_chat_app/services/api_services.dart';
 
@@ -184,6 +185,11 @@ class _SignUpState extends State<SignUp> {
                             ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                 content:
                                     Text("you have succesfully registered")));
+                            Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                    builder: (BuildContext context) {
+                              return SetAvatar();
+                            }));
                             Timer(Duration(seconds: 3), () {
                               Navigator.of(context).pushReplacement(
                                   MaterialPageRoute(

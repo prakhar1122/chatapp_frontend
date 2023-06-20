@@ -6,6 +6,7 @@ import 'package:personal_chat_app/services/socket_methods.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants.dart';
+import '../provider/userdata.dart';
 
 final dio = Dio();
 // String base = "";
@@ -63,21 +64,50 @@ Future getall() async {
   }
 }
 
-// Future sendmessage(String sender, String receiver, String messsage) async {
-//   // log("sending message");
-//   // Map<String, String> m = {
-//   //   "sender": sender,
-//   //   "receiver": receiver,
-//   //   "message": messsage
-//   // };
-//   try {
-//     // final response =
-//     //     await dio.post("${base}/messages/addmessage", data: m);
-//     // _socketMethods.sendmessage(sender, receiver, messsage);
-//     log("success");
-//     // log(response.data.toString());
-//     // return response.data["users"];
-//   } catch (e) {
-//     log(e.toString());
-//   }
-// }
+Future getbyid(String _id) async {
+  try {
+    final response = await dio.get("$base/users/$_id");
+    return response.data["user"];
+  } catch (e) {
+    log(e.toString());
+  }
+}
+
+Future getallchats(String sender) async {
+  List<dynamic> _ids;
+  List<dynamic> allchats = [];
+  try {
+    final response =
+        await dio.post("$base/users/getchats", data: {"sender": sender});
+    log(response.data.toString());
+    _ids = response.data["chats"];
+    for (var _id in _ids) {
+      var user = await getbyid(_id);
+      allchats.add(user);
+    }
+
+    return allchats;
+  } catch (e) {
+    log(e.toString());
+  }
+}
+
+Future addChat(String sender, String receiver) async {
+  try {
+    final response = await dio.post("$base/users/startchat",
+        data: {"sender": sender, "receiver": receiver});
+    return response.data;
+  } catch (e) {
+    log(e.toString());
+  }
+}
+
+Future getAvatar() async {
+  try {
+    final response =
+        await dio.get("https://api.multiavatar.com/${UserData.cache[1]}");
+    log(response.data.toString());
+  } catch (e) {
+    log(e.toString());
+  }
+}

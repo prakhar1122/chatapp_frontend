@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 const rgbColor = Color.fromRGBO(
-    51, 48, 212, 1.0); // Create a Color object with the RGB values
+    118, 116, 208, 1); // Create a Color object with the RGB values
 
 final primary = MaterialColor(
   0xFF3330D4, // Convert the RGB color to the equivalent primary color value

@@ -15,7 +15,7 @@ class PrefsService {
     return cache;
   }
 
-  Future deleteCache(List<String> list) async {
+  Future deleteCache() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.remove("userdata");
   }

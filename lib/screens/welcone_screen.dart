@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:personal_chat_app/colors.dart';
 import 'package:personal_chat_app/provider/userdata.dart';
 import 'package:personal_chat_app/screens/home_page.dart';
+import 'package:personal_chat_app/screens/setavatar.dart';
 import 'package:personal_chat_app/screens/signup.dart';
 import 'package:personal_chat_app/services/api_services.dart';
 
@@ -30,6 +31,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     Size size = MediaQuery.of(context).size;
     return Scaffold(
       // appBar: AppBar(),
+      floatingActionButton: FloatingActionButton(onPressed: () {
+        Navigator.push(context,
+            MaterialPageRoute(builder: (BuildContext context) {
+          return SetAvatar();
+        }));
+      }),
       body: Stack(
         children: [
           Container(
@@ -163,9 +170,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           String response =
                               await login(_name.text, _password.text);
                           if (response == "success") {
-                            await UserData().getdata();
                             ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text("successful login")));
+                            UserData().getdata();
                             Timer(Duration(seconds: 1), () {
                               Navigator.of(context).pushReplacement(
                                   MaterialPageRoute(
